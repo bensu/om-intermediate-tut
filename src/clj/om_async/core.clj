@@ -2,7 +2,7 @@
   (:require [ring.util.response :refer [file-response]]
             [ring.adapter.jetty :refer [run-jetty]]
             [ring.middleware.edn :refer [wrap-edn-params]]
-            [compojure.core :refer [defroutes GET PUT]]
+            [compojure.core :refer [defroutes GET PUT POST]]
             [compojure.route :as route]
             [compojure.handler :as handler]
             [datomic.api :as d]))
@@ -18,34 +18,43 @@
    :headers {"Content-Type" "application/edn"}
    :body (pr-str data)})
 
-(defn update-class [id params]
-  (let [db    (d/db conn)
+(defn create-class [params]
+  {:status 500})
+
+(defn get-classes [db]
+  (->> (d/q '[:find ?class
+              :where
+              [?class :class/id]]
+          db)
+       (map #(d/touch (d/entity db (first %))))
+       vec))
+
+(defn init []
+  (generate-response
+     {:classes {:url "/classes" :coll (get-classes (d/db conn))}}))
+
+(defn update-class [params]
+  (let [id    (:class/id params)
+        db    (d/db conn)
         title (:class/title params)
         eid   (ffirst
                 (d/q '[:find ?class
                        :in $ ?id
-                       :where 
+                       :where
                        [?class :class/id ?id]]
                   db id))]
     (d/transact conn [[:db/add eid :class/title title]])
     (generate-response {:status :ok})))
 
 (defn classes []
-  (let [db (d/db conn)
-        classes
-        (vec (map #(d/touch (d/entity db (first %)))
-               (d/q '[:find ?class
-                      :where
-                      [?class :class/id]]
-                 db)))]
-    (generate-response classes)))
+  (generate-response (get-classes (d/db conn))))
 
 (defroutes routes
   (GET "/" [] (index))
+  (GET "/init" [] (init))
   (GET "/classes" [] (classes))
-  (PUT "/class/:id/update"
-    {params :params edn-params :edn-params}
-    (update-class (:id params) edn-params))
+  (POST "/classes" {params :edn-params} (create-class params))
+  (PUT "/classes" {params :edn-params} (update-class params))
   (route/files "/" {:root "resources/public"}))
 
 (def handler 

@@ -1,13 +1,12 @@
 (ns om-async.core
-  (:require [cljs.reader :as reader]
+  (:require-macros [cljs.core.async.macros :refer [go]])
+  (:require [cljs.core.async :as async :refer [put! chan alts!]]
             [figwheel.client :as fw]
-            [goog.events :as events]
             [goog.dom :as gdom]
             [om.core :as om :include-macros true]
-            [om.dom :as dom :include-macros true])
-  (:import [goog.net XhrIo]
-           goog.net.EventType
-           [goog.events EventType]))
+            [om.dom :as dom :include-macros true]
+            [om-sync.core :refer [om-sync]]
+            [om-sync.util :refer [tx-tag edn-xhr]]))
 
 (enable-console-print!)
 
@@ -21,15 +20,6 @@
    :post "POST"
    :delete "DELETE"})
 
-(defn edn-xhr [{:keys [method url data on-complete]}]
-  (let [xhr (XhrIo.)]
-    (events/listen xhr goog.net.EventType.COMPLETE
-      (fn [e]
-        (on-complete (reader/read-string (.getResponseText xhr)))))
-    (. xhr
-      (send url (meths method) (when data (pr-str data))
-        #js {"Content-Type" "application/edn"}))))
-
 (def app-state
   (atom {:classes []}))
 
@@ -41,9 +31,11 @@
 (defn handle-change [e data edit-key owner]
   (om/transact! data edit-key (fn [_] (.. e -target -value))))
 
-(defn end-edit [text owner cb]
+(defn end-edit [data edit-key text owner cb]
   (om/set-state! owner :editing false)
-  (cb text))
+  (om/transact! data edit-key (fn [_] text) :update)
+  (when cb
+    (cb text)))
 
 (defn editable [data owner {:keys [edit-key on-edit] :as opts}]
   (reify
@@ -60,10 +52,10 @@
                  :value text
                  :onChange #(handle-change % data edit-key owner)
                  :onKeyPress #(when (== (.-keyCode %) 13)
-                                (end-edit text owner on-edit))
+                                (end-edit data edit-key text owner on-edit))
                  :onBlur (fn [e]
                            (when (om/get-state owner :editing)
-                             (end-edit text owner on-edit)))})
+                             (end-edit data edit-key text owner on-edit)))})
           (dom/button
             #js {:style (display (not editing))
                  :onClick #(om/set-state! owner :editing true)}
@@ -78,14 +70,19 @@
      (fn [res]
        (println "server response:" res))}))
 
-(defn classes-view [app owner]
+(defn create-class [classes owner]
+  (let [class-id-el   (om/get-node owner "class-id")
+        class-id      (.-value class-id-el)
+        class-name-el (om/get-node owner "class-name")
+        class-name    (.-value class-name-el)
+        new-class     {:class/id class-id :class/title class-name}]
+    (om/transact! classes [] #(conj % new-class)
+      [:create new-class])
+    (set! (.-value class-id-el) "")
+    (set! (.-value class-name-el) "")))
+
+(defn classes-view [classes owner]
   (reify
-    om/IWillMount
-    (will-mount [_]
-      (edn-xhr
-        {:method :get
-         :url "classes"
-         :on-complete #(om/transact! app :classes (fn [_] %))}))
     om/IRender
     (render [_]
       (dom/div #js {:id "classes"}
@@ -95,9 +92,50 @@
             (fn [class]
               (let [id (:class/id class)]
                 (om/build editable class
-                  {:opts {:edit-key :class/title
-                          :on-edit #(on-edit id %)}})))
-            (:classes app)))))))
+                  {:opts {:edit-key :class/title}})))
+            classes))
+        (dom/div nil
+          (dom/label nil "ID:")
+          (dom/input #js {:ref "class-id"})
+          (dom/label nil "Name:")
+          (dom/input #js {:ref "class-name"})
+          (dom/button
+            #js {:onClick (fn [e] (create-class classes owner))}
+           "Add"))))))
 
-(om/root classes-view app-state
-  {:target (gdom/getElement "classes")})
+(defn app-view [app owner]
+  (reify
+    om/IWillUpdate
+    (will-update [_ next-props next-state]
+      (when (:err-msg next-state)
+        (js/setTimeout #(om/set-state! owner :err-msg nil) 5000)))
+    om/IRenderState
+    (render-state [_ {:keys [err-msg]}]
+      (dom/div nil
+        (om/build om-sync (:classes app)
+          {:opts {:view classes-view
+                  :filter (comp #{:create :update :delete} tx-tag)
+                  :id-key :class/id
+                  :on-success (fn [res tx-data] (println res))
+                  :on-error
+                  (fn [err tx-data]
+                    (reset! app-state (:old-state tx-data))
+                    (om/set-state! owner :err-msg
+                      "Ooops! Sorry something went wrong try again later."))}})
+         (when err-msg
+           (dom/div nil err-msg))))))
+
+(let [tx-chan (chan)
+      tx-pub-chan (async/pub tx-chan (fn [_] :txs))]
+  (edn-xhr
+    {:method :get
+     :url "/init"
+     :on-complete
+     (fn [res]
+       (reset! app-state res)
+       (om/root app-view app-state
+         {:target (gdom/getElement "classes")
+          :shared {:tx-chan tx-pub-chan}
+          :tx-listen
+          (fn [tx-data root-cursor]
+            (put! tx-chan [tx-data root-cursor]))}))}))
