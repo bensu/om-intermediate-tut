@@ -2,15 +2,12 @@
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [cljs.core.async :as async :refer [put! chan alts!]]
             [figwheel.client :as fw]
-            [goog.dom :as gdom]
             [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]
             [om-sync.core :refer [om-sync]]
             [om-sync.util :refer [tx-tag edn-xhr]]))
 
 (enable-console-print!)
-
-(println "Hello world!")
 
 (fw/start {:websocket-url "ws://localhost:3449/figwheel-ws"})
 
@@ -134,7 +131,7 @@
      (fn [res]
        (reset! app-state res)
        (om/root app-view app-state
-         {:target (gdom/getElement "classes")
+         {:target (.getElementById js/document "classes") 
           :shared {:tx-chan tx-pub-chan}
           :tx-listen
           (fn [tx-data root-cursor]
