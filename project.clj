@@ -18,8 +18,7 @@
                  [com.datomic/datomic-free "0.9.5130" :exclusions [joda-time]]]
 
   :plugins [[lein-cljsbuild "1.0.4"]
-            [lein-ring "0.9.1"]
-            [lein-figwheel "0.2.2-SNAPSHOT"]]
+            [lein-figwheel "0.2.4-SNAPSHOT"]]
 
 
   :source-paths ["src/clj" "src/cljs"]
@@ -27,8 +26,7 @@
   :clean-targets ^{:protect false} ["resources/public/js/out"
                                     "resources/public/js/main.js"]
 
-  :ring {:handler om-async.core/handler
-         :port 8000}
+  :figwheel {:ring-handler om-async.core/handler}
 
   :cljsbuild {:builds [{:id "dev"
                         :source-paths ["src/clj" "src/cljs"]
