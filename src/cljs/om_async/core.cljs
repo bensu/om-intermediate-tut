@@ -11,12 +11,6 @@
 
 (fw/start {})
 
-(def ^:private meths
-  {:get "GET"
-   :put "PUT"
-   :post "POST"
-   :delete "DELETE"})
-
 (def app-state
   (atom {:classes []}))
 
