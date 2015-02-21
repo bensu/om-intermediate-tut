@@ -42,8 +42,8 @@
             #js {:style (display editing)
                  :value text
                  :onChange #(handle-change % data edit-key owner)
-                 :onKeyPress #(when (== (.-keyCode %) 13)
-                                (end-edit data edit-key text owner on-edit))
+                 :onKeyDown #(when (= (.-key %) "Enter")
+                               (end-edit data edit-key text owner on-edit))
                  :onBlur (fn [e]
                            (when (om/get-state owner :editing)
                              (end-edit data edit-key text owner on-edit)))})
