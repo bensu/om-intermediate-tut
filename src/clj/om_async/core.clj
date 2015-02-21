@@ -34,8 +34,8 @@
      {:classes {:url "/classes" :coll (get-classes (d/db conn))}}))
 
 (defn update-class [params]
-  (let [id    (:class/id params)
-        db    (d/db conn)
+  (let [db    (d/db conn)
+        id    (:class/id params)
         title (:class/title params)
         eid   (ffirst
                 (d/q '[:find ?class

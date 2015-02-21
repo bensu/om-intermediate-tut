@@ -9,13 +9,7 @@
 
 (enable-console-print!)
 
-(fw/start)
-
-(def ^:private meths
-  {:get "GET"
-   :put "PUT"
-   :post "POST"
-   :delete "DELETE"})
+(fw/start {})
 
 (def app-state
   (atom {:classes []}))
@@ -48,24 +42,14 @@
             #js {:style (display editing)
                  :value text
                  :onChange #(handle-change % data edit-key owner)
-                 :onKeyPress #(when (== (.-keyCode %) 13)
-                                (end-edit data edit-key text owner on-edit))
-                 :onBlur (fn [e]
-                           (when (om/get-state owner :editing)
-                             (end-edit data edit-key text owner on-edit)))})
+                 :onKeyDown #(when (= (.-key %) "Enter")
+                               (end-edit data edit-key text owner on-edit))
+                 :onBlur #(when (om/get-state owner :editing)
+                            (end-edit data edit-key text owner on-edit))})
           (dom/button
             #js {:style (display (not editing))
                  :onClick #(om/set-state! owner :editing true)}
             "Edit"))))))
-
-(defn on-edit [id title]
-  (edn-xhr
-    {:method :put
-     :url (str "class/" id "/update")
-     :data {:class/title title}
-     :on-complete
-     (fn [res]
-       (println "server response:" res))}))
 
 (defn create-class [classes owner]
   (let [class-id-el   (om/get-node owner "class-id")
@@ -85,11 +69,7 @@
       (dom/div #js {:id "classes"}
         (dom/h2 nil "Classes")
         (apply dom/ul nil
-          (map
-            (fn [class]
-              (let [id (:class/id class)]
-                (om/build editable class
-                  {:opts {:edit-key :class/title}})))
+          (map #(om/build editable % {:opts {:edit-key :class/title}})
             classes))
         (dom/div nil
           (dom/label nil "ID:")
@@ -118,7 +98,7 @@
                   (fn [err tx-data]
                     (reset! app-state (:old-state tx-data))
                     (om/set-state! owner :err-msg
-                      "Ooops! Sorry something went wrong try again later."))}})
+                      "Oops! Sorry, something went wrong. Try again later."))}})
          (when err-msg
            (dom/div nil err-msg))))))
 
