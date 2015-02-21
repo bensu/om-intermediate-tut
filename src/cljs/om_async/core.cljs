@@ -69,11 +69,7 @@
       (dom/div #js {:id "classes"}
         (dom/h2 nil "Classes")
         (apply dom/ul nil
-          (map
-            (fn [class]
-              (let [id (:class/id class)]
-                (om/build editable class
-                  {:opts {:edit-key :class/title}})))
+          (map #(om/build editable % {:opts {:edit-key :class/title}})
             classes))
         (dom/div nil
           (dom/label nil "ID:")
