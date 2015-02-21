@@ -9,7 +9,7 @@
 
 (enable-console-print!)
 
-(fw/start)
+(fw/start {})
 
 (def ^:private meths
   {:get "GET"
