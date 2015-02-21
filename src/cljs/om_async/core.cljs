@@ -51,15 +51,6 @@
                  :onClick #(om/set-state! owner :editing true)}
             "Edit"))))))
 
-(defn on-edit [id title]
-  (edn-xhr
-    {:method :put
-     :url (str "class/" id "/update")
-     :data {:class/title title}
-     :on-complete
-     (fn [res]
-       (println "server response:" res))}))
-
 (defn create-class [classes owner]
   (let [class-id-el   (om/get-node owner "class-id")
         class-id      (.-value class-id-el)
