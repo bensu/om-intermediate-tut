@@ -44,9 +44,8 @@
                  :onChange #(handle-change % data edit-key owner)
                  :onKeyDown #(when (= (.-key %) "Enter")
                                (end-edit data edit-key text owner on-edit))
-                 :onBlur (fn [e]
-                           (when (om/get-state owner :editing)
-                             (end-edit data edit-key text owner on-edit)))})
+                 :onBlur #(when (om/get-state owner :editing)
+                            (end-edit data edit-key text owner on-edit))})
           (dom/button
             #js {:style (display (not editing))
                  :onClick #(om/set-state! owner :editing true)}
