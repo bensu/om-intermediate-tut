@@ -98,7 +98,7 @@
                   (fn [err tx-data]
                     (reset! app-state (:old-state tx-data))
                     (om/set-state! owner :err-msg
-                      "Ooops! Sorry something went wrong try again later."))}})
+                      "Oops! Sorry, something went wrong. Try again later."))}})
          (when err-msg
            (dom/div nil err-msg))))))
 
