@@ -1,11 +1,11 @@
 (ns om-async.core
   (:require [ring.util.response :refer [file-response]]
             [ring.adapter.jetty :refer [run-jetty]]
-            [ring.middleware.edn :refer [wrap-edn-params]]
             [compojure.core :refer [defroutes GET PUT POST]]
             [compojure.route :as route]
             [compojure.handler :as handler]
-            [datomic.api :as d]))
+            [datomic.api :as d]
+            [clojure.edn :as edn]))
 
 (def uri "datomic:free://localhost:4334/om_async")
 (def conn (d/connect uri))
