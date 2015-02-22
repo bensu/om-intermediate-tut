@@ -53,8 +53,8 @@
   (GET "/" [] (index))
   (GET "/init" [] (init))
   (GET "/classes" [] (classes))
-  (POST "/classes" {params :edn-params} (create-class params))
-  (PUT "/classes" {params :edn-params} (update-class params))
+  (POST "/classes" {params :body-edn} (create-class params))
+  (PUT "/classes" {params :body-edn} (update-class params))
   (route/files "/" {:root "resources/public"}))
 
 (defn read-inputstream-edn [input]
