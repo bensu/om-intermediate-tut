@@ -57,6 +57,19 @@
   (PUT "/classes" {params :edn-params} (update-class params))
   (route/files "/" {:root "resources/public"}))
 
-(def handler 
+(defn read-inputstream-edn [input]
+  (edn/read
+   {:eof nil}
+   (java.io.PushbackReader.
+    (java.io.InputStreamReader. input "UTF-8"))))
+
+(defn parse-edn-body [handler]
+  (fn [request]
+    (handler (if-let [body (:body request)]
+               (assoc request
+                 :body-edn (read-inputstream-edn body))
+               request))))
+
+(def handler
   (-> routes
-      wrap-edn-params))
+      parse-edn-body))
