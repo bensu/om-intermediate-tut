@@ -53,8 +53,8 @@
   (GET "/" [] (index))
   (GET "/init" [] (init))
   (GET "/classes" [] (classes))
-  (POST "/classes" {params :body-edn} (create-class params))
-  (PUT "/classes" {params :body-edn} (update-class params))
+  (POST "/classes" {params :edn-body} (create-class params))
+  (PUT "/classes" {params :edn-body} (update-class params))
   (route/files "/" {:root "resources/public"}))
 
 (defn read-inputstream-edn [input]
@@ -67,7 +67,7 @@
   (fn [request]
     (handler (if-let [body (:body request)]
                (assoc request
-                 :body-edn (read-inputstream-edn body))
+                 :edn-body (read-inputstream-edn body))
                request))))
 
 (def handler
