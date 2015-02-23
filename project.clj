@@ -14,7 +14,6 @@
                  [ring "1.3.2"]
                  [compojure "1.3.1"]
                  [figwheel "0.2.4-SNAPSHOT"]
-                 [fogus/ring-edn "0.2.0"]
                  [com.datomic/datomic-free "0.9.5130" :exclusions [joda-time]]]
 
   :plugins [[lein-cljsbuild "1.0.4"]
