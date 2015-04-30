@@ -1,7 +1,6 @@
 (ns om-async.core
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [cljs.core.async :as async :refer [put! chan alts!]]
-            [figwheel.client :as fw]
             [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]
             [om-sync.core :refer [om-sync]]
