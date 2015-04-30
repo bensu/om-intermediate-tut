@@ -9,8 +9,6 @@
 
 (enable-console-print!)
 
-(fw/start)
-
 (def ^:private meths
   {:get "GET"
    :put "PUT"
